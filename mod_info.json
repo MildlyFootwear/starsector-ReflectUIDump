@@ -1,0 +1,11 @@
+{
+    "id":"ShoeyUIDump",
+	"name":"UIDump",
+	"author":"Shoey",
+    "utility":"true",
+    "version": { "major":"0", "minor": "1", "patch": "0" },
+	"description":"",
+    "gameVersion": "0.97a-RC11",
+  	"jars":["jars/example.jar"],
+  	"modPlugin":"Shoey.UIDump.MainPlugin"
+}
