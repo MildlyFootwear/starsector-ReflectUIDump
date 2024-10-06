@@ -121,28 +121,23 @@ class Kot {
         for (m: Any in instancesOfMethods)
         {
             var methodName = getMethodNameHandle.invoke(m) as String
-            if (invokedList.contains(instance.hashCode().toString()+m.hashCode()))
+            var ident = instance.hashCode().toString()+methodName
+            if (invokedList.contains(ident))
             {
                 s+="\n$prefix"+"Method "+methodName+" has already been invoked on this instance."
                 continue
             }
             s += "\n"+(prefix+"Method: "+methodName)
-            if ((methodName.startsWith("get") || methodName.startsWith("is")) && !methodName.startsWith("getCoreUI")  && !methodName.startsWith("getParent") && !invokedList.contains(instance.hashCode().toString()+methodName))
+            if ((methodName.startsWith("get") || methodName.startsWith("is")) && !methodName.startsWith("getCoreUI")  && !methodName.startsWith("getParent") && !invokedList.contains(ident))
             {
-                invokedList.add(instance.hashCode().toString()+m.hashCode())
+                invokedList.add(ident)
                 try {
                     var invoked = invokeMethod(methodName, instance) as Any
                     s += "\n" + prefix + "Returns "+returnTypesString(invoked)+invoked.javaClass+": " + invoked.toString()
                     dumpText(invoked, prefix)
-                    if (invoked is UIComponentAPI) {
-                        if (invoked is UIPanelAPI) {
 
-                        } else {
-                            s += "\n" + prefix + "{"
-                            dumpDetails(invoked, "    " + prefix, true, false)
-                            s += "\n" + prefix + "}"
-                        }
-                    }
+                    s += "\n" + prefix + "{"
+                    dumpDetails(invoked, "    " + prefix, true, false)
 
                 } catch (e: Exception)
                 {
@@ -226,6 +221,14 @@ class Kot {
                     dumpDetails(c, "    " + prefix, true)
                 }
                 s += "\n" + (prefix) + "}"
+            } else if (instance is List<Any?>)
+            {
+                for(a: Any? in list)
+                {
+                    if (a == null)
+                        continue
+                    dumpDetails(a, "    " + prefix, true)
+                }
             }
         }
         if (instance is UIPanelAPI)
