@@ -7,6 +7,7 @@ import com.fs.starfarer.api.combat.MutableShipStatsAPI
 import com.fs.starfarer.api.combat.ShipAPI
 import com.fs.starfarer.api.fleet.FleetMemberAPI
 import com.fs.starfarer.api.ui.ButtonAPI
+import com.fs.starfarer.api.ui.LabelAPI
 import com.fs.starfarer.api.ui.TooltipMakerAPI
 import com.fs.starfarer.api.ui.UIComponentAPI
 import com.fs.starfarer.api.ui.UIPanelAPI
@@ -22,7 +23,8 @@ class Kot {
     var UIDump = ""
     var list: MutableList<String> = mutableListOf()
     var invokedList: MutableList<String> = mutableListOf()
-    var depth: Int = 30
+    var depth: Int = 14
+    var maxdepth: Int = 0;
     fun returnTypesString(subject: Any?) : String
     {
         var returnValue = ""
@@ -114,21 +116,28 @@ class Kot {
         return UIDump
     }
 
-    fun dumpMethods(instance: Any, prefix: String, fromWithin: Boolean) {
+    fun dumpMethods(instance: Any, prefix: String, fromWithin: Boolean, invokeMethods: Boolean = true) {
+        if (maxdepth < prefix.length/4)
+            maxdepth = prefix.length/4
+        if (s.length > 10000) {
+            log.info("inserting "+s.length+" into "+UIDump.length+", max depth so far "+maxdepth)
+            UIDump += s
+            s = ""
+        }
         val instancesOfMethods: Array<out Any> = instance.javaClass.getDeclaredMethods()
         if (fromWithin)
             s+="\n"+prefix+"Class: "+instance.javaClass.toString()
         for (m: Any in instancesOfMethods)
         {
-            var methodName = getMethodNameHandle.invoke(m) as String
-            var ident = instance.hashCode().toString()+methodName
+            var methodName: String = getMethodNameHandle.invoke(m) as String
+            var ident: String = instance.hashCode().toString()+methodName
             if (invokedList.contains(ident))
             {
                 s+="\n$prefix"+"Method "+methodName+" has already been invoked on this instance."
                 continue
             }
             s += "\n"+(prefix+"Method: "+methodName)
-            if ((methodName.startsWith("get") || methodName.startsWith("is")) && !methodName.startsWith("getCoreUI")  && !methodName.startsWith("getParent") && !invokedList.contains(ident))
+            if ((methodName.startsWith("get") || methodName.startsWith("is")) && !methodName.startsWith("getParent") && !invokedList.contains(ident) && invokeMethods && UIDump.length < 2000000)
             {
                 invokedList.add(ident)
                 try {
@@ -183,8 +192,10 @@ class Kot {
     }
 
     fun dumpDetails(instance: Any, prefix: String, recursive: Boolean, skipMethod: Boolean) {
+        if (maxdepth < prefix.length/4)
+            maxdepth = prefix.length/4
         if (s.length > 10000) {
-            log.info("inserting "+s.length+" into "+UIDump.length)
+            log.info("inserting "+s.length+" into "+UIDump.length+", max depth so far "+maxdepth)
             UIDump += s
             s = ""
         }
@@ -193,16 +204,18 @@ class Kot {
 
             s += "\n" + (prefix + "Class: " + instance.javaClass)
             s += "\n" + (prefix + "Types: " + returnTypesString(instance))
-            if (prefix.length >= depth*4)
-            {
-                s += "\n"+prefix+"Max depth achieved at $depth, returning."
-                return
-            }
+
             dumpText(instance, prefix)
 //            try {
 //                dumpDeclaredFields(instance, prefix)
 //            } catch (e: Exception) {
 //            }
+
+            if (prefix.length >= depth*4)
+            {
+                s += "\n"+prefix+"Max depth achieved at $depth, returning."
+                return
+            }
             if (!skipMethod) {
                 cancel = true
                 s += "\n" + (prefix) + "{"
@@ -221,14 +234,6 @@ class Kot {
                     dumpDetails(c, "    " + prefix, true)
                 }
                 s += "\n" + (prefix) + "}"
-            } else if (instance is List<Any?>)
-            {
-                for(a: Any? in list)
-                {
-                    if (a == null)
-                        continue
-                    dumpDetails(a, "    " + prefix, true)
-                }
             }
         }
         if (instance is UIPanelAPI)
